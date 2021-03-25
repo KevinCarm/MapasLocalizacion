@@ -1,6 +1,7 @@
 package com.example.mapaslocalizacion
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
@@ -10,6 +11,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.StringRequest
@@ -37,63 +39,63 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var latitudeDestiny: Double = 20.206003
     private var markerOrigin: Marker? = null
     private var markerDestiny: Marker? = null
+    private var mapFragment: SupportMapFragment? = null
+    private var status: Boolean = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment?
-        mapFragment?.getMapAsync(this)
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            validatePermission()
+        } else {
+            startMap()
+        }
 
     }
-    
+
+    private fun validatePermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            startMap();
+        } else if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            Toast.makeText(
+                this,
+                "Es necesario conceder el permiso de ubicación para utilizar la app",
+                Toast.LENGTH_LONG
+            ).show();
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                1
+            );
+        } else {
+            // You can directly ask for the permission.
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                1
+            );
+        }
+    }
+
+    private fun startMap() {
+        mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment?
+        mapFragment?.getMapAsync(this)
+    }
+
     //20.2125993,-100.8913107 salva
     //20.2056695,-101.0291317 gerva
+    @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap?) {
         try {
             map = googleMap!!
-
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(
-                        this,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                ) {
-
-                } else {
-                    ActivityCompat.requestPermissions(
-                        this,
-                        arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION),
-                        1
-                    )
-                }
-                if (ActivityCompat.shouldShowRequestPermissionRationale(
-                        this,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    )
-                ) {
-
-                } else {
-                    ActivityCompat.requestPermissions(
-                        this,
-                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                        1
-                    )
-                }
-            }
-
-
-
 
             map.setOnMapClickListener {
                 if (markerDestiny != null && markerOrigin != null) {
@@ -200,28 +202,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     ) {
         when (requestCode) {
             1 -> {
-                // If request is cancelled, the result arrays are empty.
-                if ((grantResults.isNotEmpty() &&
-                            grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                ) {
-                    // Permission is granted. Continue the action or workflow
-                    // in your app.
-
-                } else {
-                    // Explain to the user that the feature is unavailable because
-                    // the features requires a permission that the user has denied.
-                    // At the same time, respect the user's decision. Don't link to
-                    // system settings in an effort to convince the user to change
-                    // their decision.
-                }
-                return
+                status = grantResults[0] == PackageManager.PERMISSION_GRANTED;
             }
-
-            // Add other 'when' lines to check for other
-            // permissions this app might request.
-            else -> {
-                // Ignore all other requests.
-            }
+        }
+        if (status) {
+            startMap()
+        } else {
+            finish()
         }
     }
     //AIzaSyB8ffayG_-7mvZv9ZHYP7UvMXQXqNAaW1A
