@@ -42,7 +42,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var mapFragment: SupportMapFragment? = null
     private var status: Boolean = false
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
